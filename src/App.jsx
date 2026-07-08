@@ -37,7 +37,7 @@ function useViewport() {
 }
 
 export default function App() {
-  const [lang, setLang] = useState('am');
+  const [lang, setLang] = useState('en');
   const [menuOpen, setMenuOpen] = useState(false);
   const [faqOpen, setFaqOpen] = useState(0);
   const [tab, setTab] = useState('participant');
