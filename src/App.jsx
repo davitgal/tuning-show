@@ -14,6 +14,7 @@ import {
   faqList,
   EVENT_TIME,
 } from './content';
+import { supabase, uploadFiles, BUCKETS } from './supabase';
 import fireGradientBg from './assets/images/fire-gradient-bg.jpg';
 import frameBadgeYellow from './assets/images/frame-badge-yellow.png';
 import carCutout from './assets/images/car-cutout.png';
@@ -45,6 +46,8 @@ export default function App() {
   const [faqOpen, setFaqOpen] = useState(0);
   const [tab, setTab] = useState('participant');
   const [sent, setSent] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [formError, setFormError] = useState('');
 
   const now = useNow();
   const vw = useViewport();
@@ -85,14 +88,83 @@ export default function App() {
     return Array(4).fill(base).flat();
   }, [lang, t.heroDate]);
 
-  function submitForm(e) {
+  async function submitForm(e) {
     e.preventDefault();
-    setSent(true);
+    const form = e.currentTarget;
+
+    if (!supabase) {
+      setFormError(t.formNotConfigured);
+      return;
+    }
+
+    setSubmitting(true);
+    setFormError('');
+    const fd = new FormData(form);
+    const str = (k) => (fd.get(k) || '').toString().trim() || null;
+    const num = (k) => {
+      const v = str(k);
+      return v == null ? null : Number(v);
+    };
+
+    try {
+      if (tab === 'participant') {
+        const files = form.querySelector('input[type="file"]')?.files;
+        const photos = await uploadFiles(BUCKETS.participantPhotos, files);
+        const { error } = await supabase.from('participant_requests').insert({
+          full_name: str('full_name'),
+          phone: str('phone'),
+          age: num('age'),
+          email: str('email'),
+          vehicle_make: str('vehicle_make'),
+          vehicle_model: str('vehicle_model'),
+          year: num('year'),
+          license_plate: str('license_plate'),
+          nomination: str('nomination'),
+          photos,
+          agreed_terms: fd.get('terms') === 'on',
+        });
+        if (error) throw error;
+      } else if (tab === 'visitor') {
+        const { error } = await supabase.from('visitor_requests').insert({
+          full_name: str('full_name'),
+          phone: str('phone'),
+          city: str('city'),
+          party_size: num('party_size'),
+          email: str('email'),
+          occupation: str('occupation'),
+          heard_about: str('heard_about'),
+          visited_before: str('visited_before'),
+          interests: fd.getAll('interests'),
+          consent: fd.get('consent') === 'on',
+        });
+        if (error) throw error;
+      } else {
+        const files = form.querySelector('input[type="file"]')?.files;
+        const decks = await uploadFiles(BUCKETS.partnerDecks, files);
+        const { error } = await supabase.from('partner_requests').insert({
+          company: str('company'),
+          contact_person: str('contact_person'),
+          position: str('position'),
+          phone: str('phone'),
+          email: str('email'),
+          website: str('website'),
+          idea: str('idea'),
+          deck: decks[0] || null,
+        });
+        if (error) throw error;
+      }
+      setSent(true);
+    } catch (err) {
+      setFormError(err?.message || t.formError);
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   function switchTab(next) {
     setTab(next);
     setSent(false);
+    setFormError('');
   }
 
   return (
@@ -129,6 +201,8 @@ export default function App() {
         lang={lang}
         tab={tab}
         sent={sent}
+        submitting={submitting}
+        formError={formError}
         switchTab={switchTab}
         submitForm={submitForm}
         noms={noms}
@@ -374,7 +448,7 @@ function Program({ t, scheduleItems }) {
   );
 }
 
-function Apply({ t, lang, tab, sent, switchTab, submitForm, noms }) {
+function Apply({ t, lang, tab, sent, submitting, formError, switchTab, submitForm, noms }) {
   return (
     <section id="apply" className="section section--narrow">
       <div className="eyebrow eyebrow--center">04 — {t.secApply}</div>
@@ -430,34 +504,34 @@ function Apply({ t, lang, tab, sent, switchTab, submitForm, noms }) {
       {!sent && tab === 'participant' && (
         <form className="form-grid" onSubmit={submitForm}>
           <Field label={t.fName} required>
-            <input type="text" placeholder="—" required />
+            <input type="text" name="full_name" placeholder="—" required />
           </Field>
           <Field label={t.fPhone} required>
-            <input type="tel" placeholder="—" required />
+            <input type="tel" name="phone" placeholder="—" required />
           </Field>
           <Field label={t.fAge} required>
-            <input type="number" min="16" max="100" placeholder="25" required />
+            <input type="number" name="age" min="16" max="100" placeholder="25" required />
           </Field>
           <Field label={t.fEmail} suffix={`(${t.optional})`}>
-            <input type="email" placeholder="—" />
+            <input type="email" name="email" placeholder="—" />
           </Field>
           <Field label={t.fMake} required>
-            <input type="text" placeholder="—" required />
+            <input type="text" name="vehicle_make" placeholder="—" required />
           </Field>
           <Field label={t.fModel} required>
-            <input type="text" placeholder="—" required />
+            <input type="text" name="vehicle_model" placeholder="—" required />
           </Field>
           <Field label={t.fYear} required>
-            <input type="number" min="1950" max="2026" placeholder="2015" required />
+            <input type="number" name="year" min="1950" max="2026" placeholder="2015" required />
           </Field>
           <Field label={t.fPlate} required>
-            <input type="text" placeholder="—" required />
+            <input type="text" name="license_plate" placeholder="—" required />
           </Field>
           <div className="field field--full">
             <span className="field-label">
               {t.fNom} <span className="required-mark">*</span>
             </span>
-            <Select options={noms.map((n) => n.title)} />
+            <Select name="nomination" options={noms.map((n) => n.title)} />
           </div>
           <label className="field field--full">
             <span className="field-label">
@@ -467,11 +541,11 @@ function Apply({ t, lang, tab, sent, switchTab, submitForm, noms }) {
               <div className="upload-arrow">↑</div>
               <div className="upload-cta">{t.fUploadCta}</div>
               <div className="upload-hint">{t.fUploadHint}</div>
-              <input type="file" accept="image/*" multiple className="upload-input" required />
+              <input type="file" name="photos" accept="image/*" multiple className="upload-input" required />
             </div>
           </label>
           <label className="consent field--full">
-            <input type="checkbox" required />
+            <input type="checkbox" name="terms" required />
             <span>
               {t.fTerms}{' '}
               <a href="#terms" className="consent-link">
@@ -479,8 +553,9 @@ function Apply({ t, lang, tab, sent, switchTab, submitForm, noms }) {
               </a>
             </span>
           </label>
-          <button type="submit" className="btn btn--gradient form-submit">
-            {t.fSubmit}
+          {formError && <div className="form-error field--full">{formError}</div>}
+          <button type="submit" className="btn btn--gradient form-submit" disabled={submitting}>
+            {submitting ? t.submitting : t.fSubmit}
           </button>
         </form>
       )}
@@ -488,45 +563,46 @@ function Apply({ t, lang, tab, sent, switchTab, submitForm, noms }) {
       {!sent && tab === 'visitor' && (
         <form className="form-grid" onSubmit={submitForm}>
           <Field label={t.fName} required>
-            <input type="text" placeholder="—" required />
+            <input type="text" name="full_name" placeholder="—" required />
           </Field>
           <Field label={t.fPhone} required>
-            <input type="tel" placeholder="—" required />
+            <input type="tel" name="phone" placeholder="—" required />
           </Field>
           <Field label={t.fCity} required>
-            <input type="text" placeholder="—" required />
+            <input type="text" name="city" placeholder="—" required />
           </Field>
           <Field label={t.fParty} required>
-            <input type="number" min="1" max="20" placeholder="2" required />
+            <input type="number" name="party_size" min="1" max="20" placeholder="2" required />
           </Field>
           <Field label={t.fEmail} suffix={`(${t.optional})`}>
-            <input type="email" placeholder="—" />
+            <input type="email" name="email" placeholder="—" />
           </Field>
           <Field label={t.fOccupation} suffix={`(${t.optional})`}>
-            <input type="text" placeholder="—" />
+            <input type="text" name="occupation" placeholder="—" />
           </Field>
           <div className="field field--full">
             <span className="field-label">
               {t.fHear} <span className="required-mark">*</span>
             </span>
-            <Select options={visitorHear[lang]} />
+            <Select name="heard_about" options={visitorHear[lang]} />
           </div>
           <div className="field field--full">
             <span className="field-label">
               {t.fVisited} <span className="required-mark">*</span>
             </span>
-            <Select options={visitorVisited[lang]} />
+            <Select name="visited_before" options={visitorVisited[lang]} />
           </div>
           <div className="field field--full">
             <span className="field-label">{t.fInterest}</span>
-            <MultiSelect options={visitorInterest[lang]} placeholder={t.selectPlaceholder} />
+            <MultiSelect name="interests" options={visitorInterest[lang]} placeholder={t.selectPlaceholder} />
           </div>
           <label className="consent field--full">
-            <input type="checkbox" required />
+            <input type="checkbox" name="consent" required />
             <span>{t.fConsent}</span>
           </label>
-          <button type="submit" className="btn btn--gradient form-submit">
-            {t.fSubmit}
+          {formError && <div className="form-error field--full">{formError}</div>}
+          <button type="submit" className="btn btn--gradient form-submit" disabled={submitting}>
+            {submitting ? t.submitting : t.fSubmit}
           </button>
         </form>
       )}
@@ -534,25 +610,25 @@ function Apply({ t, lang, tab, sent, switchTab, submitForm, noms }) {
       {!sent && tab === 'partner' && (
         <form className="form-grid" onSubmit={submitForm}>
           <Field label={t.fCompany} required>
-            <input type="text" placeholder="—" required />
+            <input type="text" name="company" placeholder="—" required />
           </Field>
           <Field label={t.fContact} required>
-            <input type="text" placeholder="—" required />
+            <input type="text" name="contact_person" placeholder="—" required />
           </Field>
           <Field label={t.fPosition} suffix={`(${t.optional})`}>
-            <input type="text" placeholder="—" />
+            <input type="text" name="position" placeholder="—" />
           </Field>
           <Field label={t.fPhone} required>
-            <input type="tel" placeholder="—" required />
+            <input type="tel" name="phone" placeholder="—" required />
           </Field>
           <Field label={t.fEmail} required>
-            <input type="email" placeholder="—" required />
+            <input type="email" name="email" placeholder="—" required />
           </Field>
           <Field label={t.fWebsite} suffix={`(${t.optional})`}>
-            <input type="text" placeholder="—" />
+            <input type="text" name="website" placeholder="—" />
           </Field>
           <Field label={t.fPartnerIdea} suffix={`(${t.optional})`} full>
-            <textarea rows="3" placeholder="—" />
+            <textarea name="idea" rows="3" placeholder="—" />
           </Field>
           <label className="field field--full">
             <span className="field-label">
@@ -564,13 +640,15 @@ function Apply({ t, lang, tab, sent, switchTab, submitForm, noms }) {
               <div className="upload-hint">{t.fPartnerDeckHint}</div>
               <input
                 type="file"
+                name="deck"
                 accept=".pdf,.ppt,.pptx"
                 className="upload-input"
               />
             </div>
           </label>
-          <button type="submit" className="btn btn--gradient form-submit">
-            {t.fSubmitPartner}
+          {formError && <div className="form-error field--full">{formError}</div>}
+          <button type="submit" className="btn btn--gradient form-submit" disabled={submitting}>
+            {submitting ? t.submitting : t.fSubmitPartner}
           </button>
         </form>
       )}
@@ -603,12 +681,13 @@ function useClickOutside(open, onClose) {
   return ref;
 }
 
-function Select({ options, placeholder = '—' }) {
+function Select({ options, placeholder = '—', name }) {
   const [open, setOpen] = useState(false);
   const [value, setValue] = useState('');
   const ref = useClickOutside(open, () => setOpen(false));
   return (
     <div className={'select' + (open ? ' select--open' : '')} ref={ref}>
+      {name && <input type="hidden" name={name} value={value} readOnly />}
       <button
         type="button"
         className="select-trigger"
@@ -643,7 +722,7 @@ function Select({ options, placeholder = '—' }) {
   );
 }
 
-function MultiSelect({ options, placeholder = '—' }) {
+function MultiSelect({ options, placeholder = '—', name }) {
   const [open, setOpen] = useState(false);
   const [values, setValues] = useState([]);
   const ref = useClickOutside(open, () => setOpen(false));
@@ -652,6 +731,7 @@ function MultiSelect({ options, placeholder = '—' }) {
   const label = values.length ? values.join(', ') : placeholder;
   return (
     <div className={'select' + (open ? ' select--open' : '')} ref={ref}>
+      {name && values.map((v) => <input key={v} type="hidden" name={name} value={v} readOnly />)}
       <button
         type="button"
         className="select-trigger"
