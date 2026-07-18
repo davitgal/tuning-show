@@ -16,6 +16,7 @@ const SECTIONS = [
     ],
     fileField: 'photos',
     fileLabel: 'Photos',
+    isImage: true,
   },
   {
     key: 'visitor',
@@ -288,8 +289,55 @@ function Detail({ row, section }) {
 
 function Files({ section, value }) {
   const paths = Array.isArray(value) ? value : value ? [value] : [];
-  const [urls, setUrls] = useState(null);
+  const key = paths.join('|');
+  const [items, setItems] = useState(null);
+  const [lightbox, setLightbox] = useState(-1);
 
+  useEffect(() => {
+    if (!section.isImage || paths.length === 0) return undefined;
+    let cancelled = false;
+    (async () => {
+      const out = [];
+      for (const p of paths) {
+        const { data } = await supabase.storage.from(section.bucket).createSignedUrl(p, 3600);
+        out.push({ path: p, url: data?.signedUrl });
+      }
+      if (!cancelled) setItems(out);
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key, section.bucket, section.isImage]);
+
+  if (paths.length === 0)
+    return <div className="admin-muted admin-files-empty">No {section.fileLabel.toLowerCase()}.</div>;
+
+  if (!section.isImage) return <FileLinks section={section} paths={paths} />;
+
+  return (
+    <div className="admin-files">
+      <div className="admin-files-head">
+        {section.fileLabel} ({paths.length})
+      </div>
+      <div className="admin-thumbs">
+        {items === null && <span className="admin-muted">Loading…</span>}
+        {items &&
+          items.map((it, i) => (
+            <button key={it.path} className="admin-thumb" onClick={() => setLightbox(i)} type="button">
+              <img src={it.url} alt="" loading="lazy" />
+            </button>
+          ))}
+      </div>
+      {lightbox >= 0 && items && (
+        <Lightbox items={items} index={lightbox} onIndex={setLightbox} onClose={() => setLightbox(-1)} />
+      )}
+    </div>
+  );
+}
+
+function FileLinks({ section, paths }) {
+  const [urls, setUrls] = useState(null);
   async function reveal() {
     const out = [];
     for (const p of paths) {
@@ -298,14 +346,11 @@ function Files({ section, value }) {
     }
     setUrls(out);
   }
-
-  if (paths.length === 0) return <div className="admin-muted admin-files-empty">No {section.fileLabel.toLowerCase()}.</div>;
-
   return (
     <div className="admin-files">
       <div className="admin-files-head">{section.fileLabel}</div>
       {!urls ? (
-        <button className="admin-btn admin-btn--sm" onClick={reveal}>
+        <button className="admin-btn admin-btn--sm" onClick={reveal} type="button">
           Get links ({paths.length})
         </button>
       ) : (
@@ -319,6 +364,60 @@ function Files({ section, value }) {
           ))}
         </ul>
       )}
+    </div>
+  );
+}
+
+function Lightbox({ items, index, onIndex, onClose }) {
+  const n = items.length;
+  const go = useCallback(
+    (d) => onIndex((index + d + n) % n),
+    [index, n, onIndex]
+  );
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key === 'Escape') onClose();
+      else if (e.key === 'ArrowRight') go(1);
+      else if (e.key === 'ArrowLeft') go(-1);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [go, onClose]);
+
+  const stop = (e) => e.stopPropagation();
+  return (
+    <div className="admin-lightbox" onClick={onClose}>
+      <button className="admin-lb-close" onClick={onClose} type="button">
+        ✕
+      </button>
+      {n > 1 && (
+        <button
+          className="admin-lb-nav admin-lb-prev"
+          onClick={(e) => {
+            stop(e);
+            go(-1);
+          }}
+          type="button"
+        >
+          ‹
+        </button>
+      )}
+      <img className="admin-lb-img" src={items[index].url} alt="" onClick={stop} />
+      {n > 1 && (
+        <button
+          className="admin-lb-nav admin-lb-next"
+          onClick={(e) => {
+            stop(e);
+            go(1);
+          }}
+          type="button"
+        >
+          ›
+        </button>
+      )}
+      <div className="admin-lb-count" onClick={stop}>
+        {index + 1} / {n}
+      </div>
     </div>
   );
 }
