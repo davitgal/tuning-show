@@ -30,6 +30,7 @@ export const dict = {
     fOccupation: 'Occupation',
     fHear: 'How did you hear about Tuning Show?',
     fInterest: 'What are you most interested in?',
+    selectPlaceholder: 'Select one or more…',
     fVisited: 'Have you been to Garage Mall before?',
     fConsent:
       'I agree that my data may be used by Garage Mall and Tuning Show to organize participation and to send updates about the event and future offers.',
@@ -144,6 +145,7 @@ export const dict = {
     fOccupation: 'Род занятий',
     fHear: 'Откуда узнали о Tuning Show?',
     fInterest: 'Что вам интереснее всего?',
+    selectPlaceholder: 'Выберите одно или несколько…',
     fVisited: 'Бывали ли вы раньше в Garage Mall?',
     fConsent:
       'Согласен(на), что мои данные могут использоваться Garage Mall и Tuning Show для организации участия и отправки информации о мероприятии и будущих предложениях.',
@@ -257,6 +259,7 @@ export const dict = {
     fOccupation: 'Զբաղմունք',
     fHear: 'Որտեղի՞ց եք իմացել Tuning Show-ի մասին',
     fInterest: 'Ի՞նչն է Ձեզ ամենաշատը հետաքրքրում',
+    selectPlaceholder: 'Ընտրեք մեկ կամ մի քանիսը…',
     fVisited: 'Նախկինում այցելե՞լ եք Garage Mall',
     fConsent:
       'Համաձայն եմ, որ իմ տվյալները կարող են օգտագործվել Garage Mall-ի և Tuning Show-ի կողմից մասնակցությունը կազմակերպելու և միջոցառման ու հետագա առաջարկների մասին տեղեկություններ ուղարկելու համար:',

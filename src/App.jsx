@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   dict,
   countdownLabels,
@@ -453,18 +453,12 @@ function Apply({ t, lang, tab, sent, switchTab, submitForm, noms }) {
           <Field label={t.fPlate} required>
             <input type="text" placeholder="—" required />
           </Field>
-          <Field label={t.fNom} required full>
-            <select required defaultValue="">
-              <option value="" disabled>
-                —
-              </option>
-              {noms.map((n) => (
-                <option key={n.num} value={n.title}>
-                  {n.title}
-                </option>
-              ))}
-            </select>
-          </Field>
+          <div className="field field--full">
+            <span className="field-label">
+              {t.fNom} <span className="required-mark">*</span>
+            </span>
+            <Select options={noms.map((n) => n.title)} />
+          </div>
           <label className="field field--full">
             <span className="field-label">
               {t.fUpload} <span className="required-mark">*</span>
@@ -511,40 +505,21 @@ function Apply({ t, lang, tab, sent, switchTab, submitForm, noms }) {
           <Field label={t.fOccupation} suffix={`(${t.optional})`}>
             <input type="text" placeholder="—" />
           </Field>
-          <Field label={t.fHear} required full>
-            <select required defaultValue="">
-              <option value="" disabled>
-                —
-              </option>
-              {visitorHear[lang].map((o) => (
-                <option key={o} value={o}>
-                  {o}
-                </option>
-              ))}
-            </select>
-          </Field>
-          <Field label={t.fVisited} required full>
-            <select required defaultValue="">
-              <option value="" disabled>
-                —
-              </option>
-              {visitorVisited[lang].map((o) => (
-                <option key={o} value={o}>
-                  {o}
-                </option>
-              ))}
-            </select>
-          </Field>
+          <div className="field field--full">
+            <span className="field-label">
+              {t.fHear} <span className="required-mark">*</span>
+            </span>
+            <Select options={visitorHear[lang]} />
+          </div>
+          <div className="field field--full">
+            <span className="field-label">
+              {t.fVisited} <span className="required-mark">*</span>
+            </span>
+            <Select options={visitorVisited[lang]} />
+          </div>
           <div className="field field--full">
             <span className="field-label">{t.fInterest}</span>
-            <div className="checkbox-grid">
-              {visitorInterest[lang].map((o) => (
-                <label key={o} className="check-item">
-                  <input type="checkbox" name="interest" value={o} />
-                  <span>{o}</span>
-                </label>
-              ))}
-            </div>
+            <MultiSelect options={visitorInterest[lang]} placeholder={t.selectPlaceholder} />
           </div>
           <label className="consent field--full">
             <input type="checkbox" required />
@@ -612,6 +587,103 @@ function Field({ label, required, suffix, full, children }) {
       </span>
       {children}
     </label>
+  );
+}
+
+function useClickOutside(open, onClose) {
+  const ref = useRef(null);
+  useEffect(() => {
+    if (!open) return undefined;
+    const onDoc = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) onClose();
+    };
+    document.addEventListener('mousedown', onDoc);
+    return () => document.removeEventListener('mousedown', onDoc);
+  }, [open, onClose]);
+  return ref;
+}
+
+function Select({ options, placeholder = '—' }) {
+  const [open, setOpen] = useState(false);
+  const [value, setValue] = useState('');
+  const ref = useClickOutside(open, () => setOpen(false));
+  return (
+    <div className={'select' + (open ? ' select--open' : '')} ref={ref}>
+      <button
+        type="button"
+        className="select-trigger"
+        onClick={() => setOpen((o) => !o)}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+      >
+        <span className={value ? 'select-value' : 'select-value select-value--empty'}>
+          {value || placeholder}
+        </span>
+        <span className="select-caret" aria-hidden="true" />
+      </button>
+      {open && (
+        <ul className="select-menu" role="listbox">
+          {options.map((o) => (
+            <li key={o} role="option" aria-selected={o === value}>
+              <button
+                type="button"
+                className={'select-option' + (o === value ? ' select-option--active' : '')}
+                onClick={() => {
+                  setValue(o);
+                  setOpen(false);
+                }}
+              >
+                {o}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+function MultiSelect({ options, placeholder = '—' }) {
+  const [open, setOpen] = useState(false);
+  const [values, setValues] = useState([]);
+  const ref = useClickOutside(open, () => setOpen(false));
+  const toggle = (o) =>
+    setValues((v) => (v.includes(o) ? v.filter((x) => x !== o) : [...v, o]));
+  const label = values.length ? values.join(', ') : placeholder;
+  return (
+    <div className={'select' + (open ? ' select--open' : '')} ref={ref}>
+      <button
+        type="button"
+        className="select-trigger"
+        onClick={() => setOpen((o) => !o)}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+      >
+        <span className={values.length ? 'select-value' : 'select-value select-value--empty'}>
+          {label}
+        </span>
+        <span className="select-caret" aria-hidden="true" />
+      </button>
+      {open && (
+        <ul className="select-menu" role="listbox" aria-multiselectable="true">
+          {options.map((o) => {
+            const checked = values.includes(o);
+            return (
+              <li key={o} role="option" aria-selected={checked}>
+                <button
+                  type="button"
+                  className={'select-option' + (checked ? ' select-option--active' : '')}
+                  onClick={() => toggle(o)}
+                >
+                  <span className={'select-box' + (checked ? ' select-box--on' : '')} aria-hidden="true" />
+                  {o}
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </div>
   );
 }
 
