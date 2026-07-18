@@ -1186,6 +1186,36 @@ textarea::placeholder {
   background: rgba(255, 191, 0, 0.05);
 }
 
+.upload-box--drag {
+  border-color: var(--yellow);
+  border-style: solid;
+  background: rgba(255, 191, 0, 0.12);
+}
+
+.upload-box--filled {
+  border-style: solid;
+  border-color: rgba(255, 191, 0, 0.5);
+  background: rgba(255, 191, 0, 0.05);
+  text-align: left;
+}
+
+.upload-files {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.upload-file {
+  font-size: 13px;
+  color: var(--fg);
+  word-break: break-all;
+}
+
+.upload-box--filled .upload-hint {
+  margin-top: 8px;
+  color: var(--fg-faint);
+}
+
 .upload-arrow {
   font-family: var(--font-display);
   font-weight: 400;

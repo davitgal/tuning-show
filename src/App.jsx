@@ -533,17 +533,19 @@ function Apply({ t, lang, tab, sent, submitting, formError, switchTab, submitFor
             </span>
             <Select name="nomination" options={noms.map((n) => n.title)} />
           </div>
-          <label className="field field--full">
+          <div className="field field--full">
             <span className="field-label">
               {t.fUpload} <span className="required-mark">*</span>
             </span>
-            <div className="upload-box">
-              <div className="upload-arrow">↑</div>
-              <div className="upload-cta">{t.fUploadCta}</div>
-              <div className="upload-hint">{t.fUploadHint}</div>
-              <input type="file" name="photos" accept="image/*" multiple className="upload-input" required />
-            </div>
-          </label>
+            <UploadBox
+              name="photos"
+              accept="image/*"
+              multiple
+              required
+              cta={t.fUploadCta}
+              hint={t.fUploadHint}
+            />
+          </div>
           <label className="consent field--full">
             <input type="checkbox" name="terms" required />
             <span>
@@ -630,22 +632,17 @@ function Apply({ t, lang, tab, sent, submitting, formError, switchTab, submitFor
           <Field label={t.fPartnerIdea} suffix={`(${t.optional})`} full>
             <textarea name="idea" rows="3" placeholder="—" />
           </Field>
-          <label className="field field--full">
+          <div className="field field--full">
             <span className="field-label">
               {t.fPartnerDeck} <span className="field-suffix">({t.optional})</span>
             </span>
-            <div className="upload-box">
-              <div className="upload-arrow">↑</div>
-              <div className="upload-cta">{t.fUploadCta}</div>
-              <div className="upload-hint">{t.fPartnerDeckHint}</div>
-              <input
-                type="file"
-                name="deck"
-                accept=".pdf,.ppt,.pptx"
-                className="upload-input"
-              />
-            </div>
-          </label>
+            <UploadBox
+              name="deck"
+              accept=".pdf,.ppt,.pptx"
+              cta={t.fUploadCta}
+              hint={t.fPartnerDeckHint}
+            />
+          </div>
           {formError && <div className="form-error field--full">{formError}</div>}
           <button type="submit" className="btn btn--gradient form-submit" disabled={submitting}>
             {submitting ? t.submitting : t.fSubmitPartner}
@@ -653,6 +650,65 @@ function Apply({ t, lang, tab, sent, submitting, formError, switchTab, submitFor
         </form>
       )}
     </section>
+  );
+}
+
+function UploadBox({ name, accept, multiple, required, cta, hint }) {
+  const inputRef = useRef(null);
+  const [files, setFiles] = useState([]);
+  const [drag, setDrag] = useState(false);
+
+  function onDrop(e) {
+    e.preventDefault();
+    setDrag(false);
+    const dropped = e.dataTransfer.files;
+    if (dropped && dropped.length && inputRef.current) {
+      inputRef.current.files = dropped;
+      setFiles(Array.from(dropped));
+    }
+  }
+
+  return (
+    <div
+      className={
+        'upload-box' +
+        (drag ? ' upload-box--drag' : '') +
+        (files.length ? ' upload-box--filled' : '')
+      }
+      onDragOver={(e) => {
+        e.preventDefault();
+        setDrag(true);
+      }}
+      onDragLeave={() => setDrag(false)}
+      onDrop={onDrop}
+    >
+      {files.length === 0 ? (
+        <>
+          <div className="upload-arrow">↑</div>
+          <div className="upload-cta">{cta}</div>
+          <div className="upload-hint">{hint}</div>
+        </>
+      ) : (
+        <div className="upload-files">
+          {files.map((f) => (
+            <div key={f.name} className="upload-file">
+              ✓ {f.name}
+            </div>
+          ))}
+          <div className="upload-hint">{cta}</div>
+        </div>
+      )}
+      <input
+        ref={inputRef}
+        type="file"
+        name={name}
+        accept={accept}
+        multiple={multiple}
+        required={required}
+        className="upload-input"
+        onChange={(e) => setFiles(Array.from(e.target.files || []))}
+      />
+    </div>
   );
 }
 

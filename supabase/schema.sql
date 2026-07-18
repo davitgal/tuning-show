@@ -70,7 +70,9 @@ begin
     execute format('drop policy if exists auth_update on %I;', t);
     execute format('drop policy if exists auth_delete on %I;', t);
 
-    execute format('create policy anon_insert on %I for insert to anon           with check (true);', t);
+    -- insert allowed for everyone (anonymous site visitors AND a logged-in admin
+    -- sharing the same browser session) — reading stays authenticated-only.
+    execute format('create policy anon_insert on %I for insert to public         with check (true);', t);
     execute format('create policy auth_select on %I for select to authenticated  using (true);', t);
     execute format('create policy auth_update on %I for update to authenticated  using (true) with check (true);', t);
     execute format('create policy auth_delete on %I for delete to authenticated  using (true);', t);
@@ -88,7 +90,7 @@ drop policy if exists ts_storage_anon_upload on storage.objects;
 drop policy if exists ts_storage_auth_read   on storage.objects;
 
 create policy ts_storage_anon_upload on storage.objects
-  for insert to anon
+  for insert to public
   with check (bucket_id in ('participant-photos', 'partner-decks'));
 
 create policy ts_storage_auth_read on storage.objects
