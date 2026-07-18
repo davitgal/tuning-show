@@ -6,14 +6,17 @@ import {
   statLabels,
   nominations,
   schedule,
-  partners,
+  visitorHear,
+  visitorInterest,
+  visitorVisited,
+  // partners, // Правка 2: секция партнёров временно скрыта
   socials,
   faqList,
   EVENT_TIME,
 } from './content';
 import fireGradientBg from './assets/images/fire-gradient-bg.jpg';
 import frameBadgeYellow from './assets/images/frame-badge-yellow.png';
-import tiresCutout from './assets/images/tires-cutout.png';
+import carCutout from './assets/images/car-cutout.png';
 
 const pad = (n) => String(n).padStart(2, '0');
 
@@ -109,7 +112,7 @@ export default function App() {
         <MobileMenu t={t} navItems={navItems} onClose={() => setMenuOpen(false)} />
       )}
 
-      <Hero t={t} bgImage={fireGradientBg} tiresImage={tiresCutout} />
+      <Hero t={t} bgImage={fireGradientBg} carImage={carCutout} />
 
       <Marquee items={marqueeItems} />
 
@@ -123,6 +126,7 @@ export default function App() {
 
       <Apply
         t={t}
+        lang={lang}
         tab={tab}
         sent={sent}
         switchTab={switchTab}
@@ -130,11 +134,16 @@ export default function App() {
         noms={noms}
       />
 
-      <Partners t={t} partners={partners} />
+      <BecomePartner t={t} switchTab={switchTab} />
+
+      {/* Правка 2: витрина логотипов партнёров скрыта временно — вернём, когда появятся логотипы */}
+      {/* <Partners t={t} partners={partners} /> */}
 
       <Location t={t} />
 
       <FAQ t={t} faqs={faqs} faqOpen={faqOpen} setFaqOpen={setFaqOpen} />
+
+      <Terms t={t} />
 
       <Footer t={t} socials={socials} />
 
@@ -216,7 +225,7 @@ function MobileMenu({ t, navItems, onClose }) {
   );
 }
 
-function Hero({ t, bgImage, tiresImage }) {
+function Hero({ t, bgImage, carImage }) {
   return (
     <section id="top" className="hero" style={{ backgroundImage: `url(${bgImage})` }}>
       <div className="hero-inner">
@@ -244,14 +253,14 @@ function Hero({ t, bgImage, tiresImage }) {
               {t.cta1}
             </a>
             <a href="#partners" className="btn btn--outline-dark">
-              {t.cta2}
+              <span className="btn-skew">{t.cta2}</span>
             </a>
           </div>
         </div>
+      </div>
 
-        <div className="hero-tires">
-          <img src={tiresImage} alt="" />
-        </div>
+      <div className="hero-car">
+        <img src={carImage} alt="" />
       </div>
     </section>
   );
@@ -365,7 +374,7 @@ function Program({ t, scheduleItems }) {
   );
 }
 
-function Apply({ t, tab, sent, switchTab, submitForm, noms }) {
+function Apply({ t, lang, tab, sent, switchTab, submitForm, noms }) {
   return (
     <section id="apply" className="section section--narrow">
       <div className="eyebrow eyebrow--center">04 — {t.secApply}</div>
@@ -379,6 +388,12 @@ function Apply({ t, tab, sent, switchTab, submitForm, noms }) {
           {t.tabParticipant}
         </button>
         <button
+          onClick={() => switchTab('visitor')}
+          className={'tab-btn' + (tab === 'visitor' ? ' tab-btn--active' : '')}
+        >
+          {t.tabVisitor}
+        </button>
+        <button
           onClick={() => switchTab('partner')}
           className={'tab-btn' + (tab === 'partner' ? ' tab-btn--active' : '')}
         >
@@ -386,18 +401,29 @@ function Apply({ t, tab, sent, switchTab, submitForm, noms }) {
         </button>
       </div>
 
-      <div className="notice">
-        <div className="notice-icon">!</div>
-        <div>
-          <div className="notice-head">{t.noticeHead}</div>
-          <div className="notice-body">{t.noticeBody}</div>
+      {tab === 'participant' && (
+        <div className="notice">
+          <div className="notice-icon">!</div>
+          <div>
+            <div className="notice-head">{t.noticeHead}</div>
+            <div className="notice-body">{t.noticeBody}</div>
+          </div>
         </div>
-      </div>
+      )}
+
+      {tab === 'visitor' && (
+        <div className="notice notice--soft">
+          <div className="notice-icon">i</div>
+          <div>
+            <div className="notice-body">{t.visitorIntro}</div>
+          </div>
+        </div>
+      )}
 
       {sent && (
         <div className="thanks">
-          <div className="thanks-title">{t.thanks}</div>
-          <div className="thanks-sub">{t.thanksSub}</div>
+          <div className="thanks-title">{tab === 'partner' ? t.thanksPartner : t.thanks}</div>
+          <div className="thanks-sub">{tab === 'partner' ? t.thanksPartnerSub : t.thanksSub}</div>
         </div>
       )}
 
@@ -450,6 +476,80 @@ function Apply({ t, tab, sent, switchTab, submitForm, noms }) {
               <input type="file" accept="image/*" multiple className="upload-input" required />
             </div>
           </label>
+          <label className="consent field--full">
+            <input type="checkbox" required />
+            <span>
+              {t.fTerms}{' '}
+              <a href="#terms" className="consent-link">
+                {t.fTermsLink}
+              </a>
+            </span>
+          </label>
+          <button type="submit" className="btn btn--gradient form-submit">
+            {t.fSubmit}
+          </button>
+        </form>
+      )}
+
+      {!sent && tab === 'visitor' && (
+        <form className="form-grid" onSubmit={submitForm}>
+          <Field label={t.fName} required>
+            <input type="text" placeholder="—" required />
+          </Field>
+          <Field label={t.fPhone} required>
+            <input type="tel" placeholder="—" required />
+          </Field>
+          <Field label={t.fCity} required>
+            <input type="text" placeholder="—" required />
+          </Field>
+          <Field label={t.fParty} required>
+            <input type="number" min="1" max="20" placeholder="2" required />
+          </Field>
+          <Field label={t.fEmail} suffix={`(${t.optional})`}>
+            <input type="email" placeholder="—" />
+          </Field>
+          <Field label={t.fOccupation} suffix={`(${t.optional})`}>
+            <input type="text" placeholder="—" />
+          </Field>
+          <Field label={t.fHear} required full>
+            <select required defaultValue="">
+              <option value="" disabled>
+                —
+              </option>
+              {visitorHear[lang].map((o) => (
+                <option key={o} value={o}>
+                  {o}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label={t.fVisited} required full>
+            <select required defaultValue="">
+              <option value="" disabled>
+                —
+              </option>
+              {visitorVisited[lang].map((o) => (
+                <option key={o} value={o}>
+                  {o}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <div className="field field--full">
+            <span className="field-label">{t.fInterest}</span>
+            <div className="checkbox-grid">
+              {visitorInterest[lang].map((o) => (
+                <label key={o} className="check-item">
+                  <input type="checkbox" name="interest" value={o} />
+                  <span>{o}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+          <label className="consent field--full">
+            <input type="checkbox" required />
+            <span>{t.fConsent}</span>
+          </label>
           <button type="submit" className="btn btn--gradient form-submit">
             {t.fSubmit}
           </button>
@@ -458,23 +558,44 @@ function Apply({ t, tab, sent, switchTab, submitForm, noms }) {
 
       {!sent && tab === 'partner' && (
         <form className="form-grid" onSubmit={submitForm}>
-          <Field label={t.fCompany}>
+          <Field label={t.fCompany} required>
+            <input type="text" placeholder="—" required />
+          </Field>
+          <Field label={t.fContact} required>
+            <input type="text" placeholder="—" required />
+          </Field>
+          <Field label={t.fPosition} suffix={`(${t.optional})`}>
             <input type="text" placeholder="—" />
           </Field>
-          <Field label={t.fName}>
+          <Field label={t.fPhone} required>
+            <input type="tel" placeholder="—" required />
+          </Field>
+          <Field label={t.fEmail} required>
+            <input type="email" placeholder="—" required />
+          </Field>
+          <Field label={t.fWebsite} suffix={`(${t.optional})`}>
             <input type="text" placeholder="—" />
           </Field>
-          <Field label={t.fEmail}>
-            <input type="email" placeholder="—" />
-          </Field>
-          <Field label={t.fPhone}>
-            <input type="tel" placeholder="—" />
-          </Field>
-          <Field label={t.fMsg} full>
+          <Field label={t.fPartnerIdea} suffix={`(${t.optional})`} full>
             <textarea rows="3" placeholder="—" />
           </Field>
+          <label className="field field--full">
+            <span className="field-label">
+              {t.fPartnerDeck} <span className="field-suffix">({t.optional})</span>
+            </span>
+            <div className="upload-box">
+              <div className="upload-arrow">↑</div>
+              <div className="upload-cta">{t.fUploadCta}</div>
+              <div className="upload-hint">{t.fPartnerDeckHint}</div>
+              <input
+                type="file"
+                accept=".pdf,.ppt,.pptx"
+                className="upload-input"
+              />
+            </div>
+          </label>
           <button type="submit" className="btn btn--gradient form-submit">
-            {t.fSubmit}
+            {t.fSubmitPartner}
           </button>
         </form>
       )}
@@ -524,6 +645,55 @@ function Partners({ t, partners }) {
   );
 }
 
+function BecomePartner({ t, switchTab }) {
+  return (
+    <section id="partners" className="section section--panel">
+      <div className="section-inner">
+        <div className="eyebrow">05 — {t.secPartners}</div>
+        <h2 className="section-title">{t.partnerLeadHead}</h2>
+        <p className="section-text partner-lead-sub">{t.partnerLeadSub}</p>
+
+        <div className="partner-why-head">{t.partnerWhyHead}</div>
+        <div className="partner-why-grid">
+          {t.partnerWhy.map((b, i) => (
+            <div key={i} className="partner-why-card">
+              <div className="partner-why-num">{String(i + 1).padStart(2, '0')}</div>
+              <div className="partner-why-text">{b}</div>
+            </div>
+          ))}
+        </div>
+
+        <div className="partner-how">
+          <div className="partner-how-head">{t.partnerHowHead}</div>
+          <p className="section-text">{t.partnerHowText}</p>
+        </div>
+
+        <a href="#apply" onClick={() => switchTab('partner')} className="btn btn--outline-accent">
+          {t.partnerCta}
+        </a>
+      </div>
+    </section>
+  );
+}
+
+function Terms({ t }) {
+  return (
+    <section id="terms" className="section section--narrow">
+      <div className="eyebrow">08 — {t.secTerms}</div>
+      <h2 className="section-title">{t.termsHead}</h2>
+      <div className="terms-intro">{t.termsIntro}</div>
+      <ul className="terms-list">
+        {t.termsList.map((item, i) => (
+          <li key={i} className="terms-item">
+            <span className="terms-arrow">→</span>
+            <span>{item}</span>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
 function Location({ t }) {
   return (
     <section id="location" className="section">
@@ -550,7 +720,7 @@ function Location({ t }) {
             </div>
           </div>
           <a
-            href="https://maps.google.com/?q=Garage+Mall+Yerevan"
+            href="https://yandex.com/maps/-/CTRL5YyM"
             target="_blank"
             rel="noreferrer"
             className="btn btn--outline-accent"
@@ -558,9 +728,14 @@ function Location({ t }) {
             {t.locDirections}
           </a>
         </div>
-        <div className="map-placeholder">
-          <div className="map-pin" />
-          <span className="map-note">// {t.mapNote}</span>
+        <div className="map-embed">
+          <iframe
+            title="Garage Mall map"
+            src="https://maps.google.com/maps?q=40.209819,44.463787&z=16&output=embed"
+            loading="lazy"
+            referrerPolicy="no-referrer-when-downgrade"
+            allowFullScreen
+          />
         </div>
       </div>
     </section>
