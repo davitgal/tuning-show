@@ -11,6 +11,7 @@ import {
   visitorVisited,
   // partners, // Правка 2: секция партнёров временно скрыта
   socials,
+  contacts,
   faqList,
   EVENT_TIME,
 } from './content';
@@ -219,7 +220,7 @@ export default function App() {
 
       <Terms t={t} />
 
-      <Footer t={t} socials={socials} />
+      <Footer t={t} socials={socials} contacts={contacts} lang={lang} />
 
       {isMobile && <StickyMobileCTA t={t} />}
     </div>
@@ -304,20 +305,14 @@ function Hero({ t, bgImage, carImage }) {
     <section id="top" className="hero" style={{ backgroundImage: `url(${bgImage})` }}>
       <div className="hero-inner">
         <div className="hero-copy">
-          <div className="hero-kicker">
-            <span className="pulse-dot" />
-            <span>{t.heroKicker}</span>
-          </div>
-
           <h1 className="hero-title">
             <span>TUNING</span>
             <span>SHOW</span>
           </h1>
 
-          <div className="hero-date-row">
-            <div className="hero-date">{t.heroDate}</div>
-            <div className="hero-diamond" />
-            <div className="hero-location">Garage Mall · Yerevan</div>
+          <div className="hero-kicker">
+            <span className="pulse-dot" />
+            <span>{t.heroKicker}</span>
           </div>
 
           <p className="hero-sub">{t.heroSub}</p>
@@ -979,7 +974,7 @@ function FAQ({ t, faqs, faqOpen, setFaqOpen }) {
   );
 }
 
-function Footer({ t, socials }) {
+function Footer({ t, socials, contacts, lang }) {
   return (
     <footer className="site-footer">
       <div className="footer-inner">
@@ -993,16 +988,27 @@ function Footer({ t, socials }) {
           <div>
             <div className="footer-heading">{t.footContact}</div>
             <div className="footer-contact">
-              <a href="mailto:hello@tuningshow.am">hello@tuningshow.am</a>
-              <a href="tel:+37400000000">+374 00 000 000</a>
+              <a href={`mailto:${contacts.email}`}>{contacts.email}</a>
+              {contacts.phones.map((p) => (
+                <div key={p.tel} className="footer-phone">
+                  <a href={`tel:${p.tel}`}>{p.display}</a>
+                  <span className="footer-person">{p.person[lang]}</span>
+                </div>
+              ))}
             </div>
           </div>
           <div>
             <div className="footer-heading">{t.footFollow}</div>
             <div className="footer-socials">
               {socials.map((so) => (
-                <a key={so} href="#" className="social-btn">
-                  {so}
+                <a
+                  key={so.label}
+                  href={so.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="social-btn"
+                >
+                  {so.label}
                 </a>
               ))}
             </div>

@@ -426,7 +426,7 @@ textarea::placeholder {
   background: rgba(20, 13, 8, 0.1);
   padding: 7px 13px;
   border-radius: 2px;
-  margin-bottom: clamp(18px, 3vw, 28px);
+  margin-top: clamp(18px, 3vw, 28px);
   font-size: 12px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -469,35 +469,6 @@ textarea::placeholder {
 
 .hero-title span + span {
   margin-top: 0.12em;
-}
-
-.hero-date-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px 22px;
-  align-items: center;
-  margin-top: clamp(16px, 3vw, 26px);
-}
-
-.hero-date {
-  font-family: var(--font-display);
-  font-weight: 400;
-  font-size: clamp(19px, 2.6vw, 26px);
-  text-transform: uppercase;
-  color: var(--dark-ink);
-}
-
-.hero-diamond {
-  width: 7px;
-  height: 7px;
-  background: var(--dark-ink);
-  transform: rotate(45deg);
-}
-
-.hero-location {
-  font-size: clamp(14px, 1.8vw, 17px);
-  color: rgba(20, 13, 8, 0.72);
-  font-weight: 500;
 }
 
 .hero-sub {
@@ -1538,6 +1509,18 @@ textarea::placeholder {
 .footer-contact a {
   color: var(--fg-muted);
   text-decoration: none;
+}
+
+.footer-phone {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.footer-person {
+  font-size: 13px;
+  line-height: 1.35;
+  opacity: 0.65;
 }
 
 .footer-socials {
